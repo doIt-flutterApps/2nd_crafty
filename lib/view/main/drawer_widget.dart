@@ -2,6 +2,10 @@ import 'package:crafty/data/user.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../profile/profile_list_page.dart';
+import '../profile/profile_page.dart';
+import '../setting/setting_page.dart';
+import '../sub/license_page.dart';
 
 class DrawerWidget extends StatelessWidget {
   Map<String, dynamic> listData;
@@ -25,7 +29,7 @@ class DrawerWidget extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {
                     // 프로필 페이지로 이동하기
-                    // Get.to(ProfilePage());
+                    Get.to(ProfilePage());
                   },
                   child: const Text('프로필 확인하기'),
                 ),
@@ -43,11 +47,11 @@ class DrawerWidget extends StatelessWidget {
                   title: Text(valueChangeString(value)),
                   onTap: () {
                     if (value == 'setting') {
-                      // Get.to(const SettingPage());
+                      Get.to(const SettingPage());
                     } else if (value == 'profile') {
-                      // Get.to(const ProfileListPage());
+                      Get.to(const ProfileListPage());
                     } else if (value == 'license') {
-                      // Get.to(const LicensePage());
+                      Get.to(const LicensePage());
                     }
                     FirebaseAnalytics.instance.logEvent(
                       name: 'drawer_tap',
