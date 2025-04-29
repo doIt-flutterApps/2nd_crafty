@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/user.dart';
 import '../data/constant.dart';
+import '../view/auth/auth_page.dart';
 
 class IntroPage extends StatefulWidget {
   const IntroPage({super.key});
@@ -195,8 +196,8 @@ class _IntroPage extends State<IntroPage> {
                   });
                 } else {
                   Future.delayed(const Duration(seconds: 2), () {
-                    print("로그인 안 됨");
                     // 로그인 페이지로 이동하기
+                    Get.off(AuthPage());
                   });
                 }
               });
