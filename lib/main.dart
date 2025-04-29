@@ -10,7 +10,7 @@ import 'package:get/get.dart';
 import 'data/constant.dart';
 import 'firebase_options.dart';
 import 'intro/intro_page.dart';
-import 'package:crafty/view/main/sub/buy_page.dart';
+import 'package:crafty/view/link/link_page.dart';
 
 // 백그라운드 메시지 핸들러
 @pragma('vm:entry-point')
@@ -121,6 +121,9 @@ class _MyAppState extends State<MyApp> {
     FirebaseMessaging.onMessage.listen(showFlutterNotification);
     // 앱이 백그라운드에서 열렸을 때 리스너
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      String linkId = message.data['link'];
+      Get.to(LinkPage(link: linkId));
+
       print('A new onMessageOpenedApp event was published!');
       // 필요하다면 특정 화면으로 이동하는 로직 등을 추가할 수 있습니다.
     });
