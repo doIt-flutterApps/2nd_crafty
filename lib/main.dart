@@ -11,6 +11,7 @@ import 'data/constant.dart';
 import 'firebase_options.dart';
 import 'intro/intro_page.dart';
 import 'package:crafty/view/link/link_page.dart';
+import 'package:crafty/admin/admin_page.dart';
 
 // 백그라운드 메시지 핸들러
 @pragma('vm:entry-point')
@@ -145,7 +146,8 @@ class _MyAppState extends State<MyApp> {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: IntroPage(),
+      // home: IntroPage(),
+      home: AdminPage(),
     );
   }
 }
