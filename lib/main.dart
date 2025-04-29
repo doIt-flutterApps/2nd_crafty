@@ -10,6 +10,7 @@ import 'package:get/get.dart';
 import 'data/constant.dart';
 import 'firebase_options.dart';
 import 'intro/intro_page.dart';
+import 'package:crafty/view/main/sub/buy_page.dart';
 
 // 백그라운드 메시지 핸들러
 @pragma('vm:entry-point')
