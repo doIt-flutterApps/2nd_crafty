@@ -13,6 +13,7 @@ import 'package:uuid/uuid.dart';
 import '../../../data/user.dart';
 
 import 'package:http/http.dart' as http;
+import 'package:firebase_vertexai/firebase_vertexai.dart';
 
 class SellPage extends StatefulWidget {
   const SellPage({super.key});
@@ -257,58 +258,88 @@ class _SellPage extends State<SellPage> {
                         });
                     if (writeCheck == true) {
                       final content = _textEditingController.text.trim();
-                      final title = _titleTextEditingController.text.trim();
-                      final price = _priceEditingController.text.trim();
-                      final tag = _tagtextEditingController.text.trim();
-                      if (content.isEmpty) {
-                        return;
+                      bool resultCode = await hobbyContentCheck(
+                        File(_mediaFile!.path),
+                        content,
+                        craftyKind[_selectedItem]!,
+                      );
+
+                      if (resultCode == true) {
+                        final title = _titleTextEditingController.text.trim();
+                        final price = _priceEditingController.text.trim();
+                        final tag = _tagtextEditingController.text.trim();
+                        if (content.isEmpty) {
+                          return;
+                        }
+                        String downloadurl = '';
+                        if (_mediaFile != null) {
+                          downloadurl = await uploadFile(
+                            File(_mediaFile!.path),
+                          );
+                        }
+                        final post = {
+                          'id': const Uuid().v1(),
+                          'user': user.email,
+                          'price': price,
+                          'content': content,
+                          'title': title,
+                          'image': downloadurl,
+                          'sell': false,
+                          'kind': _selectedItem,
+                          'tag': getTag(tag.split(',')),
+                          'timestamp': FieldValue.serverTimestamp(),
+                        };
+                        await FirebaseFirestore.instance
+                            .collection('crafty')
+                            .add(post)
+                            .then((value) {
+                              _textEditingController.clear();
+                              _priceEditingController.clear();
+                              _tagtextEditingController.clear();
+                              Get.snackbar(Constant.APP_NAME, 'Upload Success');
+                              if (_checkbox.isTrue) {
+                                http
+                                    .post(
+                                      Uri.parse(
+                                        'https://sendpostnotification-example-du.a.run.app',
+                                      ),
+                                      headers: <String, String>{
+                                        'Content-Type':
+                                            'application/json; charset=UTF-8',
+                                      },
+                                      body: jsonEncode(<String, dynamic>{
+                                        'title':
+                                            _titleTextEditingController.text
+                                                .trim(),
+                                        'link': value.id,
+                                      }),
+                                    )
+                                    .then((value) {
+                                      Get.back();
+                                    });
+                              }
+                            });
+                      } else {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Text(Constant.APP_NAME),
+                              content: Text(
+                                '이 이미지는 알맞지 않은 내용으로, 구글AI에 의해 노출을 제한합니다.',
+                              ),
+                              actions: <Widget>[
+                                TextButton(
+                                  child: Text('OK'),
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                ),
+                              ],
+                            );
+                          },
+                        );
                       }
-                      String downloadurl = '';
-                      if (_mediaFile != null) {
-                        downloadurl = await uploadFile(File(_mediaFile!.path));
-                      }
-                      final post = {
-                        'id': const Uuid().v1(),
-                        'user': user.email,
-                        'price': price,
-                        'content': content,
-                        'title': title,
-                        'image': downloadurl,
-                        'sell': false,
-                        'kind': _selectedItem,
-                        'tag': getTag(tag.split(",")),
-                        'timestamp': FieldValue.serverTimestamp(),
-                      };
-                      await FirebaseFirestore.instance
-                          .collection('crafty')
-                          .add(post)
-                          .then((value) {
-                            _textEditingController.clear();
-                            _priceEditingController.clear();
-                            _tagtextEditingController.clear();
-                            Get.snackbar(Constant.APP_NAME, '업로드 하였습니다');
-                            if (_checkbox.isTrue) {
-                              http
-                                  .post(
-                                    Uri.parse(
-                                      'https://craftysendpostnotification-vk4ivw6l2q-du.a.run.app',
-                                    ),
-                                    headers: <String, String>{
-                                      'Content-Type':
-                                          'application/json; charset=UTF-8',
-                                    },
-                                    body: jsonEncode(<String, dynamic>{
-                                      'title':
-                                          _titleTextEditingController.text
-                                              .trim(),
-                                      'link': value.id,
-                                    }),
-                                  )
-                                  .then((value) {
-                                    Get.back();
-                                  });
-                            }
-                          });
                     }
                   }
                 },
@@ -353,5 +384,56 @@ class _SellPage extends State<SellPage> {
       }
     });
     return tags;
+  }
+
+  Future<bool> hobbyContentCheck(
+    File image,
+    String content,
+    String kind,
+  ) async {
+    final model = FirebaseVertexAI.instance.generativeModel(
+      model: 'gemini-2.0-flash',
+    );
+    // 이미지 데이터 준비하기
+    final imageBytes = await image.readAsBytes();
+    // 제미나이에 입력할 자세한 프롬프트 만들기
+    final prompt = TextPart("""
+당신은 콘텐츠 관련성 평가 전문가입니다.
+다음을 분석하십시오:
+이미지 (JPEG 형식): [이미지 데이터]
+텍스트 내용: "$content"
+대상 취미/종류: "$kind"
+작업:
+안전성 검사:
+이미지와 텍스트에서 폭력, 유혈, 혐오 발언, 성적으로 노골적인 내용이 있는지 철저하게 검사합니다. 이 중 하나라도 발견되면 즉시 "false"를 반환하고 추가 분석을 중지합니다.
+관련성 검사 (안전한 경우에만):
+콘텐츠가 안전하다고 판단되면 이미지와 텍스트 콘텐츠가 지정된 취미/종류와 강하게 관련되는지 확인합니다.
+콘텐츠가 안전하고 취미/종류와 강하게 관련되면 "true"를 반환합니다.
+콘텐츠가 강하게 관련되지 않는다면 (안전하더라도) "false"를 반환합니다.
+해당 내용의 결괏값에 대한 킷값은 result로 하며, issue라는 킷값 result가 true면 null로, false라면 왜 false를 받았는지 그 이유를 추가로 넣습니다.
+""");
+    final imagePart = InlineDataPart('image/jpeg', imageBytes);
+    final response = await model.generateContent([
+      Content.multi([prompt, imagePart]),
+    ]);
+    final generatedContent = response.text?.trim();
+    if (generatedContent != null) {
+      final Map<String, dynamic> jsonData = jsonDecode(generatedContent);
+      // 결과와 이슈 추출하기
+      final String result = jsonData['result'];
+      final String? issue = jsonData['issue'];
+      // 결과에 따라 추가 처리 수행하기(예시)
+      if (result == 'true') {
+        // 콘텐츠가 안전하고 관련성이 높을 때
+        print('콘텐츠가 승인되었습니다.');
+        return true;
+      } else {
+        // 콘텐츠가 안전하지 않거나 관련성이 낮을 때
+        print('콘텐츠가 거부되었습니다. 이유: $issue');
+        return false;
+      }
+    } else {
+      return false;
+    }
   }
 }
