@@ -416,11 +416,19 @@ class _SellPage extends State<SellPage> {
     final response = await model.generateContent([
       Content.multi([prompt, imagePart]),
     ]);
-    final generatedContent = response.text?.trim();
+
+    // final generatedContent = response.text?.trim();
+    final rawGeneratedContent = response.text?.trim(); // Ahn
+    final generatedContent =
+        rawGeneratedContent
+            ?.substring(7, rawGeneratedContent.length - 3)
+            .trim(); // Ahn
+
     if (generatedContent != null) {
       final Map<String, dynamic> jsonData = jsonDecode(generatedContent);
       // 결과와 이슈 추출하기
-      final String result = jsonData['result'];
+      // final String result = jsonData['result'];
+      final String result = jsonData['result'].toString(); // Ahn
       final String? issue = jsonData['issue'];
       // 결과에 따라 추가 처리 수행하기(예시)
       if (result == 'true') {
